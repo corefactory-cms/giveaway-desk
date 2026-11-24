@@ -7,3 +7,5 @@
 *.html text eol=lf
 *.css text eol=lf
 *.png binary
+*.woff2 binary
+web/fonts/OFL.txt -text whitespace=-blank-at-eol

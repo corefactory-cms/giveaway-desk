@@ -65,12 +65,37 @@ function toggleSchedule(kind) {
   });
   renderSchedule();
 }
+function renderWeek(datedItems, key) {
+  const week = el('week');
+  week.replaceChildren();
+  if (!state.today) return;
+  const firstDay = new Date(state.today + 'T00:00:00Z');
+  firstDay.setUTCDate(firstDay.getUTCDate() - (firstDay.getUTCDay() + 6) % 7);
+  const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+  const dates = new Set(datedItems.map(item => item[key]));
+  for (const weekday of weekdays) {
+    const isoDate = firstDay.toISOString().slice(0, 10);
+    const day = node('time', null, 'week-day');
+    day.dateTime = isoDate;
+    if (isoDate === state.today) {
+      day.classList.add('is-today');
+      day.setAttribute('aria-current', 'date');
+    }
+    if (dates.has(isoDate)) day.classList.add('has-event');
+    day.setAttribute('aria-label', [isoDate, weekday + '요일', dates.has(isoDate) ? '일정 있음' : ''].filter(Boolean).join(' '));
+    day.append(node('span', weekday), node('b', firstDay.getUTCDate()));
+    week.append(day);
+    firstDay.setUTCDate(firstDay.getUTCDate() + 1);
+  }
+}
 function renderSchedule() {
   const target = el('schedule');
   target.replaceChildren();
   const key = scheduleKind;
   const active = key === 'deadline' ? '미응모' : '응모';
-  const upcoming = state.items.filter(item => statusOf(item) === active && item[key] && item[key] >= state.today)
+  const datedItems = state.items.filter(item => statusOf(item) === active && item[key]);
+  renderWeek(datedItems, key);
+  const upcoming = datedItems.filter(item => item[key] >= state.today)
     .sort((a, b) => a[key].localeCompare(b[key]) || a.name.localeCompare(b.name, 'ko')).slice(0, 3);
   for (const item of upcoming) {
     const button = node('button', null, 'schedule-row');
@@ -124,8 +149,20 @@ function renderRows() {
     const name = node('button', item.name, 'name-button');
     name.type = 'button';
     name.addEventListener('click', () => openDetail(item));
-    const event = addTableCell(row, name);
-    event.append(node('span', [item.organizer, item.category].filter(Boolean).join(' · '), 'meta'));
+    const event = node('div', null, 'event-entry');
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'icon');
+    icon.setAttribute('viewBox', '0 0 24 24');
+    const symbol = document.createElementNS(icon.namespaceURI, 'use');
+    symbol.setAttribute('href', item.id === exampleId ? '#icon-book' : '#icon-ticket');
+    icon.append(symbol);
+    const mark = node('span', null, 'event-mark');
+    mark.setAttribute('aria-hidden', 'true');
+    mark.append(icon);
+    const identity = node('div');
+    identity.append(name, node('span', [item.organizer, item.category].filter(Boolean).join(' · '), 'meta'));
+    event.append(mark, identity);
+    addTableCell(row, event);
     addTableCell(row, item.prize || '경품 미확인');
     const when = addTableCell(row, '마감 ' + displayDate(item.deadline));
     when.append(node('span', '발표 ' + (item.announcement ? displayDate(item.announcement) : item.announcement_note || '미확인'), 'date-secondary'));
@@ -157,9 +194,16 @@ function renderRows() {
     } else openResearch();
   };
 }
-function selectTab(value) {
+function selectTab(value, section = 'ledger') {
   tab = value;
   document.querySelectorAll('#status-tabs button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.tab === tab)));
+  const activeView = section === 'top' ? null : (value === '당첨' ? '당첨' : '전체');
+  document.querySelectorAll('.side-nav a').forEach(anchor => {
+    const current = (anchor.dataset.view || null) === activeView;
+    anchor.classList.toggle('current', current);
+    if (current) anchor.setAttribute('aria-current', 'location');
+    else anchor.removeAttribute('aria-current');
+  });
   renderRows();
 }
 function addFact(key, value) {
@@ -303,8 +347,10 @@ for (const button of document.querySelectorAll('[data-research]')) button.addEve
 for (const button of document.querySelectorAll('[data-import]')) button.addEventListener('click', () => el('import-file').click());
 el('import-file').addEventListener('change', importFile);
 el('copy').addEventListener('click', copyPrompt);
-document.querySelectorAll('.side-nav a').forEach(anchor => anchor.addEventListener('click', () => {
-  document.querySelectorAll('.side-nav a').forEach(other => other.classList.toggle('current', other === anchor));
+document.querySelectorAll('.brand, .side-nav a').forEach(anchor => anchor.addEventListener('click', () => {
+  el('search').value = '';
+  el('category').value = '';
+  selectTab(anchor.dataset.view || '전체', anchor.hash === '#top' ? 'top' : 'ledger');
 }));
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && !document.querySelector('dialog[open]')) refresh();

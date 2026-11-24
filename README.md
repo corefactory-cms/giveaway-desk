@@ -49,3 +49,5 @@ Windows의 기본 데이터 폴더는 `%LOCALAPPDATA%\GiveawayDesk`입니다. �
 ## 라이선스
 
 프로그램 소스는 [MIT 라이선스](LICENSE)로 배포합니다. Windows 배포본에는 Python 런타임과 해당 라이선스가 함께 들어 있습니다. 각 행사 주최 측의 최신 참가 조건과 경품 안내는 앱에서 연결한 원문을 확인해 주세요.
+
+화면 구성은 [shadcn/ui 대시보드](https://ui.shadcn.com/blocks/dashboard)와 [Tabler 대시보드](https://github.com/tabler/tabler)를 참고했습니다. 메뉴·목록·입력창에 쓰는 [프리텐다드](https://github.com/orioncactus/pretendard)는 앱에 포함돼 있어 인터넷 연결 없이도 표시됩니다. [글꼴 및 런타임 라이선스](THIRD_PARTY_NOTICES.md)

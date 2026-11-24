@@ -30,6 +30,8 @@ PUBLIC_FILES = (
     "storage.py",
     "web/app.css",
     "web/app.js",
+    "web/fonts/PretendardVariable.woff2",
+    "web/fonts/OFL.txt",
     "web/index.html",
     "실행.cmd",
 )
@@ -52,7 +54,7 @@ def build(cached_runtime, output):
     files = {}
     for name in PUBLIC_FILES:
         data = (ROOT / name).read_bytes()
-        if not name.endswith(".png"):
+        if not name.endswith((".png", ".woff2")) and name != "web/fonts/OFL.txt":
             data = data.replace(b"\r\n", b"\n")
         files[name] = data.replace(b"\n", b"\r\n") if name.endswith(".cmd") else data
     examples = json.loads(files["data/seed.json"])["items"]

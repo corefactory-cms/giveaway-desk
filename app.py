@@ -18,11 +18,13 @@ sys.path.insert(0, str(ROOT))  # Windows embedded Python starts with an isolated
 import storage
 
 DEFAULT_PORT = 18437
+APP_VERSION = "1.1.0"
 ASSETS = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/app.css": ("app.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+    "/fonts/PretendardVariable.woff2": ("fonts/PretendardVariable.woff2", "font/woff2"),
 }
 
 
@@ -126,24 +128,27 @@ def main():
     parser.add_argument("--port", type=int, default=None)
     parser.add_argument("--no-browser", action="store_true")
     args = parser.parse_args()
-    port = DEFAULT_PORT if args.port is None else args.port
-    if not 0 <= port <= 65535:
+    if args.port is not None and not 0 <= args.port <= 65535:
         parser.error("포트 번호는 0~65535 사이여야 합니다.")
     storage.initialize()
-    instance = hashlib.sha256(str(storage.app_home().resolve()).encode("utf-8")).hexdigest()[:20]
-    try:
-        server = Server(("127.0.0.1", port), instance)
-    except OSError:
-        url = f"http://127.0.0.1:{port}"
-        if existing_instance(url, instance):
-            if sys.stdout is not None:
-                print(url, flush=True)
-            if not args.no_browser:
-                webbrowser.open(url)
-            return
-        if args.port is not None:
-            raise
-        server = Server(("127.0.0.1", 0), instance)
+    install = f"{APP_VERSION}\n{ROOT}\n{storage.app_home().resolve()}"
+    instance = hashlib.sha256(install.encode("utf-8")).hexdigest()[:20]
+    # An older release may still be running when a new download is opened.
+    ports = [args.port] if args.port is not None else [*range(DEFAULT_PORT, DEFAULT_PORT + 5), 0]
+    for port in ports:
+        try:
+            server = Server(("127.0.0.1", port), instance)
+            break
+        except OSError:
+            url = f"http://127.0.0.1:{port}"
+            if existing_instance(url, instance):
+                if sys.stdout is not None:
+                    print(url, flush=True)
+                if not args.no_browser:
+                    webbrowser.open(url)
+                return
+            if args.port is not None or port == 0:
+                raise
     with server:
         url = f"http://127.0.0.1:{server.server_port}"
         if sys.stdout is not None:

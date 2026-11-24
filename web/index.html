@@ -1,41 +1,94 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light">
-<title>응모수첩 · 내 응모 현황</title>
-<link rel="icon" href="data:,">
-<link rel="stylesheet" href="./app.css">
-<script defer src="./app.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>응모수첩 · 내 응모 현황</title>
+  <link rel="icon" href="data:,">
+  <link rel="preload" href="/fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./app.css">
+  <script defer src="./app.js"></script>
 </head>
 <body>
+<svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+      <symbol id="icon-ticket" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h15A1.5 1.5 0 0 1 21 6.5V9a3 3 0 0 0 0 6v2.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5V15a3 3 0 0 0 0-6z M15 7.5v2 M15 12v1 M15 15.5v1"/></symbol>
+      <symbol id="icon-layout" viewBox="0 0 24 24"><path d="M3 3.8h7v7H3z M14 3.8h7v7h-7z M3 14.2h7v6.8H3z M14 14.2h7v6.8h-7z"/></symbol>
+      <symbol id="icon-list" viewBox="0 0 24 24"><path d="M4 5.5h16v13H4z M7.5 10h9 M7.5 14h6"/></symbol>
+      <symbol id="icon-award" viewBox="0 0 24 24"><path d="M12 14.8a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11z M8.2 13.5 6 21l5-2.4L12 21l1-2.4L18 21l-2.2-7.5"/></symbol>
+      <symbol id="icon-calendar" viewBox="0 0 24 24"><path d="M4 6h16v15H4z M4 10h16 M8 3v5 M16 3v5"/></symbol>
+      <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 3 1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9z M19 15l.7 2.3L22 18l-2.3.7L19 21l-.7-2.3L16 18l2.3-.7z"/></symbol>
+      <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M12 16V3 M7.5 7.5 12 3l4.5 4.5 M4 15v5h16v-5"/></symbol>
+      <symbol id="icon-code" viewBox="0 0 24 24"><path d="m9 7-5 5 5 5 M15 7l5 5-5 5"/></symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M7 17 18 6 M8 6h10v10"/></symbol>
+      <symbol id="icon-coin" viewBox="0 0 24 24"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M7 9l2 6 3-6 3 6 2-6 M6.5 12h11"/></symbol>
+      <symbol id="icon-book" viewBox="0 0 24 24"><path d="M3 4.5c4.1-1.4 6.5-.9 9 1.3 2.5-2.2 4.9-2.7 9-1.3v14c-4.1-1.4-6.5-.9-9 1.3-2.5-2.2-4.9-2.7-9-1.3z M12 6v14"/></symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24"><path d="M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15z M16 16l5 5"/></symbol>
+      <symbol id="icon-filter" viewBox="0 0 24 24"><path d="M3 7h8m4 0h6 M3 17h3m4 0h11 M11 4v6 M7 14v6"/></symbol>
+</defs></svg>
 <div class="shell">
   <aside class="sidebar" aria-label="메뉴">
-    <a class="brand" href="#top" aria-label="응모수첩 홈"><span class="book-mark" aria-hidden="true"></span>응모수첩</a>
-    <nav class="side-nav"><a href="#top" class="current"><span class="nav-icon grid-icon" aria-hidden="true"></span>대시보드</a><a href="#ledger"><span class="nav-icon list-icon" aria-hidden="true"></span>응모 목록</a></nav>
+    <a class="brand" href="#top" aria-label="응모수첩 홈"><span class="brand-mark"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-ticket"></use></svg></span>응모수첩</a>
+    <nav class="side-nav">
+      <a href="#top" class="current" aria-current="location"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-layout"></use></svg>대시보드</a>
+      <a href="#ledger" data-view="전체"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-list"></use></svg>응모 목록</a>
+      <a href="#ledger" data-view="당첨"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-award"></use></svg>당첨 기록</a>
+    </nav>
     <div class="utilities">
-      <button type="button" class="side-action" data-research><span aria-hidden="true">↻</span>AI 리서치 업데이트</button>
-      <a class="github" href="https://github.com/corefactory-cms/giveaway-desk" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+      <a class="github" href="https://github.com/corefactory-cms/giveaway-desk" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-code"></use></svg><span>GitHub 저장소</span><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-arrow"></use></svg></a>
     </div>
-    <button class="mobile-action" type="button" data-research>리서치 업데이트</button>
   </aside>
   <main id="top">
-    <header class="page-head"><h1>내 응모 현황</h1><time id="today"></time></header>
+    <header class="page-head"><div><h1>내 응모 현황</h1><div class="today"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg><time id="today"></time></div></div>
+      <button type="button" class="action-primary" data-research><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-spark"></use></svg>AI 리서치 업데이트</button>
+    </header>
     <div class="summary">
       <section class="balance" aria-labelledby="balance-label">
-        <h2 id="balance-label">누적 당첨 금액</h2><div class="money"><strong id="total">—</strong><span>원</span></div>
-        <div class="money-parts"><span>현금 <b id="cash">—</b></span><i></i><span>상품권 <b id="voucher">—</b></span></div>
+        <div class="balance-body">
+          <svg class="ticket-art" aria-hidden="true" width="230" height="175" viewBox="0 0 230 175">
+          <defs>
+            <path id="ticket-shape" d="M8 0h132a8 8 0 0 1 8 8v20a10 10 0 0 0 0 20v21a8 8 0 0 1-8 8H8a8 8 0 0 1-8-8V48a10 10 0 0 0 0-20V8a8 8 0 0 1 8-8Z"/>
+            <g id="ticket-face" fill="none" stroke="currentColor" stroke-linecap="round">
+              <path d="M108 6v65" stroke-width="1.4" stroke-dasharray="3 5"/>
+              <path d="M120 11v9m3-9v9m5-9v9m4-9v9m3-9v9 M120 58v9m4-9v9m6-9v9m4-9v9" stroke-width="2.4"/>
+              <path d="M16 12h13m-13 4h6m64 47h8m-14 4h14" stroke-width="1.6"/>
+              <path d="M51 17c0 12-7 19-20 20 13 2 20 9 20 21 2-12 8-19 21-21-13-1-20-8-21-20Z" stroke-width="2.5"/>
+              <path d="M76 18c.5 5 3 8 8 9-5 1-7.5 4-8 9-1-5-3-8-8-9 5-1 7-4 8-9Z" fill="currentColor" stroke-width="0"/>
+            </g>
+          </defs>
+          <g transform="translate(41 38) rotate(-26 74 38)">
+            <use href="#ticket-shape" fill="#294681" stroke="#162b53" stroke-width="2"/>
+            <use href="#ticket-face" color="#839bce"/>
+          </g>
+          <g transform="translate(47 72) rotate(-10 74 38)">
+            <use href="#ticket-shape" fill="#7fa9ff" stroke="#192e53" stroke-width="2"/>
+            <use href="#ticket-face" color="#14316b"/>
+          </g>
+        </svg>
+          <h2 id="balance-label">누적 당첨 금액</h2>
+          <div class="money"><strong id="total">—</strong><span>원</span></div>
+        </div>
+        <div class="money-parts">
+          <span><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-coin"></use></svg><span>현금</span><b id="cash">—</b></span>
+          <span><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-ticket"></use></svg><span>상품권</span><b id="voucher">—</b></span>
+        </div>
       </section>
-      <section class="agenda" aria-labelledby="agenda-label"><div class="agenda-heading"><h2 id="agenda-label">다가오는 일정</h2>
-        <div class="segments" aria-label="일정 구분"><button type="button" data-schedule="deadline" aria-pressed="true">응모 마감</button><button type="button" data-schedule="announcement" aria-pressed="false">당첨 발표</button></div>
-      </div><div id="schedule" class="schedule"></div></section>
+      <section class="agenda" aria-labelledby="agenda-label">
+        <div class="agenda-heading"><h2 id="agenda-label">다가오는 일정</h2>
+          <div class="segments" aria-label="일정 구분">
+            <button type="button" data-schedule="deadline" aria-pressed="true">응모 마감</button>
+            <button type="button" data-schedule="announcement" aria-pressed="false">당첨 발표</button>
+          </div>
+        </div>
+        <div id="week" class="week" aria-label="이번 주 일정"></div>
+        <div id="schedule" class="schedule"></div>
+      </section>
     </div>
     <section id="ledger" class="ledger" aria-labelledby="list-title">
-      <div class="list-heading"><h2 id="list-title">응모 목록 <small id="item-count"></small></h2><button type="button" class="import-button" data-import><span aria-hidden="true">↑</span> JSON 가져오기</button></div>
+      <div class="list-heading"><h2 id="list-title">응모 목록 <small id="item-count"></small></h2><button type="button" class="import-button" data-import><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-upload"></use></svg>JSON 가져오기</button></div>
       <div class="tabs" id="status-tabs" aria-label="상태별 목록"></div>
       <div class="toolbar">
-        <label class="search-field"><span class="magnifier" aria-hidden="true"></span><input id="search" type="search" aria-label="이벤트·주최·경품 검색" placeholder="이벤트·주최·경품 검색"></label>
+        <label class="search-field"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-search"></use></svg><input id="search" type="search" aria-label="이벤트·주최·경품 검색" placeholder="이벤트·주최·경품 검색"></label>
         <label><span class="sr-only">응모 종류</span><select id="category"><option value="">모든 종류</option></select></label>
         <label class="sort"><span class="sr-only">정렬</span><select id="sort"><option value="deadline">마감 빠른 순</option><option value="announcement">발표 빠른 순</option><option value="checked_on">최근 조사 순</option><option value="name">이름 순</option></select></label>
       </div>
