@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+runtime/
+*.sqlite*
+*.db
+.env*
+updates.json
+.taste-skill/

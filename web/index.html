@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>응모수첩 · 내 응모 현황</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./app.css">
+<script defer src="./app.js"></script>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" aria-label="메뉴">
+    <a class="brand" href="#top" aria-label="응모수첩 홈"><span class="book-mark" aria-hidden="true"></span>응모수첩</a>
+    <nav class="side-nav"><a href="#top" class="current"><span class="nav-icon grid-icon" aria-hidden="true"></span>대시보드</a><a href="#ledger"><span class="nav-icon list-icon" aria-hidden="true"></span>응모 목록</a></nav>
+    <div class="utilities">
+      <button type="button" class="side-action" data-research><span aria-hidden="true">↻</span>AI 리서치 업데이트</button>
+      <a class="github" href="https://github.com/corefactory-cms/giveaway-desk" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+    </div>
+    <button class="mobile-action" type="button" data-research>리서치 업데이트</button>
+  </aside>
+  <main id="top">
+    <header class="page-head"><h1>내 응모 현황</h1><time id="today"></time></header>
+    <div class="summary">
+      <section class="balance" aria-labelledby="balance-label">
+        <h2 id="balance-label">누적 당첨 금액</h2><div class="money"><strong id="total">—</strong><span>원</span></div>
+        <div class="money-parts"><span>현금 <b id="cash">—</b></span><i></i><span>상품권 <b id="voucher">—</b></span></div>
+      </section>
+      <section class="agenda" aria-labelledby="agenda-label"><div class="agenda-heading"><h2 id="agenda-label">다가오는 일정</h2>
+        <div class="segments" aria-label="일정 구분"><button type="button" data-schedule="deadline" aria-pressed="true">응모 마감</button><button type="button" data-schedule="announcement" aria-pressed="false">당첨 발표</button></div>
+      </div><div id="schedule" class="schedule"></div></section>
+    </div>
+    <section id="ledger" class="ledger" aria-labelledby="list-title">
+      <div class="list-heading"><h2 id="list-title">응모 목록 <small id="item-count"></small></h2><button type="button" class="import-button" data-import><span aria-hidden="true">↑</span> JSON 가져오기</button></div>
+      <div class="tabs" id="status-tabs" aria-label="상태별 목록"></div>
+      <div class="toolbar">
+        <label class="search-field"><span class="magnifier" aria-hidden="true"></span><input id="search" type="search" aria-label="이벤트·주최·경품 검색" placeholder="이벤트·주최·경품 검색"></label>
+        <label><span class="sr-only">응모 종류</span><select id="category"><option value="">모든 종류</option></select></label>
+        <label class="sort"><span class="sr-only">정렬</span><select id="sort"><option value="deadline">마감 빠른 순</option><option value="announcement">발표 빠른 순</option><option value="checked_on">최근 조사 순</option><option value="name">이름 순</option></select></label>
+      </div>
+      <div class="table-wrap"><table aria-label="이벤트 목록"><thead><tr><th scope="col">이벤트</th><th scope="col">경품</th><th scope="col">마감 · 발표</th><th scope="col">내 상태</th><th scope="col">공고</th></tr></thead><tbody id="rows"></tbody></table></div>
+      <div id="empty" class="empty" hidden><h3 id="empty-title"></h3><p id="empty-message"></p><button id="empty-action" class="button" type="button"></button></div>
+    </section>
+  </main>
+</div>
+<dialog id="research" aria-labelledby="research-title"><div class="dialog-content">
+  <div class="dialog-head"><h2 id="research-title">AI 리서치 업데이트</h2><button class="close" type="button" aria-label="닫기" data-close>×</button></div>
+  <p class="dialog-lead">피클, Claude, Gemini, Codex에 아래 요청을 보내고 조사 결과를 이 수첩에 가져오세요.</p>
+  <label for="prompt" class="field-label">에이전트에 전달할 요청</label><textarea id="prompt" class="prompt" rows="8" readonly></textarea>
+  <div class="dialog-footer"><button data-import class="button" type="button">JSON 가져오기</button><button id="copy" class="button primary" type="button">요청문 복사</button></div>
+</div></dialog>
+<dialog id="detail" aria-labelledby="detail-title"><div class="dialog-content">
+  <div class="dialog-head"><div><p id="detail-org" class="detail-org"></p><h2 id="detail-title"></h2></div><button type="button" class="close" data-close aria-label="닫기">×</button></div>
+  <p id="detail-description" class="dialog-lead"></p>
+  <dl id="facts" class="facts"></dl><div class="links" id="detail-links"></div>
+  <form id="record-form">
+    <h3>내 응모 기록</h3>
+    <div class="field"><label for="record-status">응모 상태</label><select id="record-status"></select></div>
+    <div id="prize-fields" class="prize-fields"><div class="field"><label for="record-cash">당첨 현금 (원)</label><input type="number" id="record-cash" min="0" max="9007199254740991" step="1" inputmode="numeric"></div><div class="field"><label for="record-voucher">당첨 상품권 (원)</label><input type="number" id="record-voucher" min="0" max="9007199254740991" step="1" inputmode="numeric"></div></div>
+    <div class="field"><label for="record-memo">내 메모</label><textarea id="record-memo" maxlength="8000" rows="3" placeholder="응모한 계정이나 경품 수령일 등"></textarea></div>
+    <div class="dialog-footer"><button type="button" class="button" data-close>닫기</button><button type="submit" class="button primary" id="save">기록 저장</button></div>
+  </form>
+</div></dialog>
+<input id="import-file" type="file" accept="application/json,.json" hidden>
+<div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

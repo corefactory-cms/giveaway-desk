@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "응모수첩 공개 행사 리서치",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 3000,
+      "items": { "$ref": "#/$defs/event" }
+    }
+  },
+  "$defs": {
+    "text": { "type": ["string", "null"], "maxLength": 8000 },
+    "requiredText": { "type": "string", "pattern": "\\S", "maxLength": 8000 },
+    "date": { "type": "string", "format": "date", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "optionalDate": { "anyOf": [{ "$ref": "#/$defs/date" }, { "type": "null" }] },
+    "url": { "type": "string", "format": "uri", "pattern": "^https?://[^/\\s@?#]+(?:[/?#]|$)", "maxLength": 8000 },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["entry_type", "name", "organizer", "url", "checked_on"],
+      "properties": {
+        "entry_type": { "const": "giveaway" },
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,100}$", "description": "기존 행사를 갱신할 때 catalog에서 복사합니다." },
+        "name": { "$ref": "#/$defs/requiredText" },
+        "organizer": { "$ref": "#/$defs/requiredText" },
+        "category": { "$ref": "#/$defs/text", "description": "퀴즈, 설문, 추첨, 선착순 등" },
+        "description": { "$ref": "#/$defs/text", "description": "누가 무엇에 응모하는지 알 수 있는 짧은 행사 소개" },
+        "prize": { "$ref": "#/$defs/text", "description": "주최 측이 밝힌 경품 종류, 수량, 금액" },
+        "deadline": { "$ref": "#/$defs/optionalDate" },
+        "announcement": { "$ref": "#/$defs/optionalDate", "description": "주최 측이 명시한 당첨 발표일" },
+        "announcement_note": { "$ref": "#/$defs/text", "description": "개별 연락, 발표 시기 등 공식 안내" },
+        "url": { "$ref": "#/$defs/url", "description": "주최 측 세부 공고 원문" },
+        "result_url": { "anyOf": [{ "$ref": "#/$defs/url" }, { "type": "null" }], "description": "당첨 결과를 확인한 페이지" },
+        "eligibility": { "$ref": "#/$defs/text" },
+        "how_to": { "$ref": "#/$defs/text" },
+        "checked_on": { "$ref": "#/$defs/date", "description": "공식 공고를 실제로 확인한 날짜" }
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "items": [
+    {
+      "entry_type": "giveaway",
+      "id": "example-reading-quiz",
+      "name": "사용 예시 · 동네 도서관 독서 퀴즈",
+      "organizer": "예시 도서관",
+      "category": "퀴즈",
+      "description": "사용법을 보여주는 가상 행사입니다. 아래 ‘내 메모’에 응모한 날이나 기억할 내용을 적어 보세요.",
+      "prize": "예시 경품 · 도서상품권 1만 원",
+      "url": "https://example.com/",
+      "checked_on": "2026-11-25"
+    }
+  ]
+}
