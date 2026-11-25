@@ -93,8 +93,15 @@ h1 { font-size: clamp(29px,2.55vw,40px); font-weight: 755; line-height: 1.18; le
 .prompt-preview, .agent-fallback { margin-top: 12px; }
 .prompt-preview summary { cursor: pointer; color: var(--muted); font-size: 14px; }
 .prompt-preview textarea { margin-top: 9px; }
-#goods-fields { margin: 12px 0; padding: 0; border: 0; }
-#goods-fields legend { margin-bottom: 7px; font-weight: 650; font-size: 14px; }
+.reward-group { min-width: 0; margin: 16px 0; padding: 0; border: 0; }
+.reward-group legend { margin-bottom: 7px; font-weight: 650; font-size: 14px; }
+.legacy-voucher { font-size: 13px; line-height: 1.5; color: var(--muted); margin-bottom: 9px; }
+.legacy-voucher label { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+.voucher-row { display: grid; grid-template-columns: minmax(100px,.7fr) minmax(0,1.3fr) auto; gap: 8px; align-items: end; padding: 12px 0; border-top: 1px solid var(--line); }
+.voucher-row label { min-width: 0; color: var(--muted); font-size: 12px; }
+.voucher-row input, .voucher-row select { display: block; width: 100%; min-width: 0; min-height: 38px; margin-top: 4px; padding: 6px; color: var(--ink); border: 1px solid #cdd6e3; border-radius: 5px; background: white; font-size: 14px; }
+.voucher-row label:nth-child(2) { grid-column: span 2; }
+.voucher-row .button { min-height: 38px; }
 .goods-row { display: grid; grid-template-columns: minmax(0,1fr) 60px auto; gap: 6px; margin-bottom: 6px; }
 .goods-row input { padding: 7px 9px; min-width: 0; border-radius: 5px; border: 1px solid #cdd6e3; }
 @media(max-width:600px) {
@@ -110,12 +117,11 @@ h1 { font-size: clamp(29px,2.55vw,40px); font-weight: 755; line-height: 1.18; le
 .money { display: flex; align-items: baseline; gap: 5px; margin-top: 13px; width: fit-content; max-width: 100%; background: var(--navy); }
 .money strong { font-size: clamp(39px,3.85vw,60px); font-weight: 650; letter-spacing: -.055em; line-height: 1.05; overflow-wrap: anywhere; min-width: 0; }
 .money > span { font-size: 24px; font-weight: 500; }
-.money-parts { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 15px 26px; background: #21375c; }
-.money-parts > span { display: flex; align-items: center; gap: 7px; color: #cedbf1; font-size: 13px; }
-.money-parts > span:first-child { padding-right: 15px; border-right: 1px solid #52637f; }
-.money-parts > span:last-child { padding-left: 15px; }
-.money-parts .icon { width: 16px; height: 16px; color: #9cbaff; }
-.money-parts b { margin-left: auto; color: #fff; font-size: 14px; font-weight: 660; overflow-wrap: anywhere; }
+.reward-counts { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0; padding: 12px 20px; background: #21375c; }
+.reward-counts div { min-width: 0; padding-inline: clamp(7px,1vw,16px); }
+.reward-counts div + div { border-inline-start: 1px solid #52637f; }
+.reward-counts dt, .reward-counts small { color: #cedbf1; font-size: 12px; }
+.reward-counts dd { margin: 3px 0 0; color: #fff; font-size: 15px; font-weight: 660; overflow-wrap: anywhere; }
 .agenda, .ledger { background: white; border: 1px solid var(--line); }
 .agenda { padding: 21px 23px 17px; }
 .agenda-heading h2 { font-size: 18px; font-weight: 700; letter-spacing: -.035em; }
@@ -201,7 +207,6 @@ form h3 { font-size: 16px; }
 .prompt, .field input, .field select, .field textarea { display: block; width: 100%; padding: 10px 12px; }
 .prompt, .field textarea { resize: vertical; line-height: 1.5; }
 .prompt { font-size: 13px; background: #f6f8fb; }
-.prize-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .dialog-footer { justify-content: flex-end; margin-top: 18px; }
 .button.primary { background: var(--blue); color: white; border-color: var(--blue); }
 .button.primary:hover { background: #1b489f; }
@@ -214,7 +219,6 @@ form h3 { font-size: 16px; }
   .agenda { padding-inline: 17px; }
   .ledger { padding-inline: 19px; }
   .balance-body { padding: 23px 21px; }
-  .money-parts { padding-inline: 19px; }
 }
 @media (max-width: 900px) {
   .shell { display: block; }
@@ -232,10 +236,6 @@ form h3 { font-size: 16px; }
   .summary { gap: 12px; grid-template-columns: repeat(2,minmax(0,1fr)); }
   .agenda-heading { flex-wrap: wrap; gap: 6px; }
   .agenda { padding: 15px; }
-  .money-parts { gap: 5px; padding: 13px; }
-  .money-parts .icon { display: none; }
-  .money-parts > span:first-child { padding-right: 6px; }
-  .money-parts > span:last-child { padding-left: 4px; }
   .ticket-art { width: 48%; }
 }
 @media (max-width: 600px) {
@@ -258,10 +258,7 @@ form h3 { font-size: 16px; }
   .money strong { font-size: 38px; }
   .money > span { font-size: 20px; }
   .ticket-art { width: 35%; height: 115px; top: -9px; right: 12px; }
-  .money-parts { padding: 9px 17px; }
-  .money-parts .icon { display: block; }
-  .money-parts > span:first-child { padding-right: 11px; }
-  .money-parts > span:last-child { padding-left: 9px; }
+  .reward-counts { padding: 9px 11px; }
   .agenda { padding: 13px 16px 12px; }
   .agenda-heading h2 { font-size: 16px; }
   .week { margin: 6px 0; }

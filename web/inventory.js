@@ -5,8 +5,10 @@
   const views = new WeakMap();
   const number = new Intl.NumberFormat('ko-KR');
   const pageSize = 12;
-  const kinds = {all:'전체', cash:'금화', voucher:'은화', item:'아이템'};
-  const kindHints = {cash:'현금', voucher:'상품권', item:'실물 경품', pending:'경품 미입력'};
+  const kinds = {all:'전체', cash:'현금', local:'지역상품권', coupon:'쿠폰', other:'기타'};
+  const categoryKeys = {'지역상품권':'local', '쿠폰':'coupon', '기타':'other'};
+  const units = {cash:'원', local:'장', coupon:'장', other:'건'};
+  const artTypes = {cash:['coin','gold'], local:['coin','silver'], coupon:['ticket','ticket'], other:['parcel','parcel']};
 
   // Each character is one pixel; identical colours share a single SVG path.
   const shapes = {
@@ -28,6 +30,26 @@
       '.oddccdccdccooooooo.....',
       '.odddccdccdoooo.........',
       '..ooooooooooo...........',
+      '........................'
+    ],
+    ticket: [
+      '........................',
+      '........................',
+      '........................',
+      '..ooooooooooooooooooo...',
+      '.ohhhhhhhhhhhaohhhhhho..',
+      '.ohbaaaaaaaahaohbbbaho..',
+      '.ohbahhahahahaohhahaho..',
+      '..obahhahhahahaohhaao...',
+      '...oahababahbaaabbao....',
+      '..ohahhahhahahaohhaao...',
+      '.ohbahhahahahaohhahaho..',
+      '.ohbaaaaaaaahaohbbbaho..',
+      '.odddbbbbbbbbboddddddo..',
+      '..ooooooooooooooooooo...',
+      '........................',
+      '........................',
+      '........................',
       '........................'
     ],
     parcel: [
@@ -114,6 +136,7 @@
   const palettes = {
     gold: {o:'#624217',a:'#e6aa37',b:'#bd7b20',h:'#ffde77',c:'#d0932c',d:'#a7631b'},
     silver: {o:'#394956',a:'#b5c8d2',b:'#8197a6',h:'#ecf5f6',c:'#8aa1ae',d:'#687f90'},
+    ticket: {o:'#6a3c43',a:'#efa5a1',b:'#b55e63',h:'#ffe2cf',d:'#ce7d79'},
     parcel: {o:'#584535',a:'#ca9b63',b:'#77958c',h:'#efd4a1',d:'#a47649'},
     cup: {o:'#434b50',a:'#90ada5',b:'#bd7e59',h:'#e8f1de',d:'#738c86'},
     unknown: {o:'#666f7f',a:'#c0c8d2',b:'#788798',h:'#e9edf0',d:'#a8b2bf'},
@@ -154,33 +177,40 @@
 
   function buildPrizes(items) {
     const winners = items.filter(item => item.status === '당첨');
-    const totals = {cash:0, voucher:0, item:0};
+    const totals = {cash:0, local:0, coupon:0, other:0};
     const slots = [];
     for (const event of winners) {
       const start = slots.length;
-      for (const [type, field] of [['cash', 'award_cash'], ['voucher', 'award_voucher']]) {
-        const amount = Number(event[field]);
-        if (amount > 0) {
-          totals[type] += amount;
-          slots.push({id:event.id, eventName:event.name, type, title:number.format(amount) + '원'});
-        }
+      const source = {id:event.id, eventName:event.name};
+      if (event.award_cash > 0) {
+        totals.cash += event.award_cash;
+        slots.push({...source, type:'cash', title:number.format(event.award_cash) + '원'});
+      }
+      const vouchers = event.award_vouchers || [];
+      for (const award of vouchers) {
+        const type = categoryKeys[award.kind];
+        totals[type] += type === 'other' ? 1 : award.quantity;
+        slots.push({...source, type, title:award.name, quantity:award.quantity, unit:'장', faceValue:award.face_value});
+      }
+      if (!vouchers.length && event.award_voucher > 0) {
+        totals.other++;
+        slots.push({...source, type:'other', title:'상품권 · 종류 미확인', detail:'기록된 액면 합계 ' + number.format(event.award_voucher) + '원'});
       }
       for (const award of event.award_items || []) {
-        if (!award.name || !Number.isInteger(award.quantity) || award.quantity < 1) continue;
-        totals.item += award.quantity;
-        slots.push({id:event.id, eventName:event.name, type:'item', title:award.name, quantity:award.quantity});
+        totals.other++;
+        slots.push({...source, type:'other', title:award.name, quantity:award.quantity, unit:'개'});
       }
-      if (slots.length === start) slots.push({id:event.id, eventName:event.name, type:'pending', title:'경품 입력하기'});
+      if (slots.length === start) slots.push({...source, type:'pending', title:'경품 입력하기'});
     }
     return {wins:winners.length, totals, slots};
   }
 
   function summary(type, value) {
     const stat = element('div', 'inv-stat');
-    const art = type === 'item' ? sprite('parcel', 'parcel') : sprite('coin', type === 'cash' ? 'gold' : 'silver');
-    const label = element('span', 'inv-stat-label', kindHints[type]);
+    const art = sprite(...artTypes[type]);
+    const label = element('span', 'inv-stat-label', kinds[type]);
     const count = element('strong', 'inv-stat-total', number.format(value));
-    count.append(element('span', 'inv-unit', type === 'item' ? '개' : '원'));
+    count.append(element('span', 'inv-unit', units[type]));
     const text = element('div');
     text.append(label, count);
     stat.append(art, text);
@@ -193,14 +223,17 @@
     button.dataset.slot = JSON.stringify([slot.id, slot.type, slot.title, index]);
     const picture = element('span', 'inv-slot-picture');
     let art;
-    if (slot.type === 'cash' || slot.type === 'voucher') art = sprite('coin', slot.type === 'cash' ? 'gold' : 'silver');
-    else if (slot.type === 'pending') art = sprite('unknown', 'unknown');
-    else if (/커피|라[떼테]|아메리카노|머그|찻잔/.test(slot.title)) art = sprite('cup', 'cup');
-    else art = sprite('parcel', 'parcel');
+    if (slot.type === 'pending') art = sprite('unknown', 'unknown');
+    else if (slot.unit === '개' && /커피|라[떼테]|아메리카노|머그|찻잔/.test(slot.title)) art = sprite('cup', 'cup');
+    else if (slot.type === 'other' && (slot.unit === '장' || slot.detail)) art = sprite('ticket','silver');
+    else art = sprite(...artTypes[slot.type]);
     picture.append(art);
-    if (slot.type === 'item') picture.append(element('span', 'inv-qty', '×' + number.format(slot.quantity)));
-    button.append(picture, element('span', 'inv-slot-type', kindHints[slot.type]),
-      element('strong', 'inv-slot-title', slot.title), element('span', 'inv-source', slot.eventName));
+    if (slot.quantity) picture.append(element('span', 'inv-qty', number.format(slot.quantity) + slot.unit));
+    button.append(picture, element('span', 'inv-slot-type', kinds[slot.type] || '경품 미입력'),
+      element('strong', 'inv-slot-title', slot.title));
+    const detail = slot.detail || (slot.faceValue != null ? '1장당 ' + number.format(slot.faceValue) + '원' : '');
+    if (detail) button.append(element('span', 'inv-value-note', detail));
+    button.append(element('span', 'inv-source', slot.eventName));
     button.addEventListener('click', () => view.actions.openDetail(view.byId.get(slot.id)));
     return button;
   }
@@ -223,7 +256,7 @@
     view.result.textContent = '표시된 경품 칸 ' + number.format(cutoff) + '개, 전체 ' + number.format(filtered.length) + '개';
     if (filtered.length) return;
     const isAll = view.filter === 'all';
-    const emptyTitle = isAll ? '당첨 보관함이 비어 있어요' : kindHints[view.filter] + ' 경품이 없어요';
+    const emptyTitle = isAll ? '당첨 보관함이 비어 있어요' : kinds[view.filter] + ' 경품이 없어요';
     view.empty.querySelector('strong').textContent = emptyTitle;
     view.empty.querySelector('p').textContent = isAll ? '첫 당첨 결과를 올리면 받은 경품이 여기에 모여요.' : '다른 종류의 경품은 전체에서 확인하세요.';
   }

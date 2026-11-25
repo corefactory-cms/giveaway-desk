@@ -70,13 +70,14 @@
             <use href="#ticket-face" color="#14316b"/>
           </g>
         </svg>
-          <h2 id="balance-label">누적 당첨 금액</h2>
+          <h2 id="balance-label">누적 당첨 현금</h2>
           <div class="money"><strong id="total">—</strong><span>원</span></div>
         </div>
-        <div class="money-parts">
-          <span><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-coin"></use></svg><span>현금</span><b id="cash">—</b></span>
-          <span><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-ticket"></use></svg><span>상품권</span><b id="voucher">—</b></span>
-        </div>
+        <dl class="reward-counts">
+          <div><dt>지역상품권</dt><dd id="summary-local">—</dd></div>
+          <div><dt>쿠폰</dt><dd id="summary-coupons">—</dd></div>
+          <div><dt>기타</dt><dd id="summary-other">—</dd><small id="summary-unclassified" hidden></small></div>
+        </dl>
       </section>
       <section class="agenda" aria-labelledby="agenda-label">
         <div class="agenda-heading"><h2 id="agenda-label">다가오는 일정</h2>
@@ -121,9 +122,16 @@
   <form id="record-form">
     <h3>내 응모 기록</h3>
     <div class="field"><label for="record-status">응모 상태</label><select id="record-status"></select></div>
-    <p id="unwin-hint" hidden>이 상태로 저장하면 기존 당첨 금액과 실물 경품이 보관함에서 삭제됩니다.</p>
-    <div id="prize-fields" class="prize-fields"><div class="field"><label for="record-cash">당첨 현금 (원)</label><input type="number" id="record-cash" min="0" max="9007199254740991" step="1" inputmode="numeric"></div><div class="field"><label for="record-voucher">당첨 상품권 (원)</label><input type="number" id="record-voucher" min="0" max="9007199254740991" step="1" inputmode="numeric"></div></div>
-    <fieldset id="goods-fields"><legend>실물 경품</legend><div id="goods-rows"></div><button class="button" id="add-goods" type="button">품목 추가</button></fieldset>
+    <p id="unwin-hint" hidden>이 상태로 저장하면 기존 당첨 현금과 경품이 보관함에서 삭제됩니다.</p>
+    <div id="prize-fields"><div class="field"><label for="record-cash">당첨 현금 (원)</label><input type="number" id="record-cash" min="0" max="9007199254740991" step="1" inputmode="numeric"></div></div>
+    <fieldset id="voucher-fields" class="reward-group"><legend>상품권·쿠폰</legend>
+      <div class="legacy-voucher" id="legacy-voucher" hidden>
+        <p id="legacy-voucher-note"></p>
+        <label><input type="checkbox" id="replace-legacy"> 이전 미분류 기록을 아래 상품권·쿠폰으로 교체</label>
+      </div><div id="voucher-rows"></div>
+      <button class="button" id="add-voucher" type="button">상품권·쿠폰 추가</button>
+    </fieldset>
+    <fieldset id="goods-fields" class="reward-group"><legend>기타 경품</legend><div id="goods-rows"></div><button class="button" id="add-goods" type="button">품목 추가</button></fieldset>
     <div class="field"><label for="record-memo">내 메모</label><textarea id="record-memo" maxlength="8000" rows="3" placeholder="응모한 계정이나 경품 수령일 등"></textarea></div>
     <div class="dialog-footer"><button type="button" class="button" data-close>닫기</button><button type="submit" class="button primary" id="save">기록 저장</button></div>
   </form>

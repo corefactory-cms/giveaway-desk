@@ -111,10 +111,20 @@ function renderSchedule() {
 function renderSummary() {
   const won = state.items.filter(item => statusOf(item) === '당첨');
   const cash = won.reduce((sum, entry) => sum + Number(entry.award_cash || 0), 0);
-  const voucher = won.reduce((sum, entry) => sum + Number(entry.award_voucher || 0), 0);
-  el('total').textContent = formatMoney.format(cash + voucher);
-  el('cash').textContent = formatMoney.format(cash) + '원';
-  el('voucher').textContent = formatMoney.format(voucher) + '원';
+  const counts = {'지역상품권':0, '쿠폰':0, '기타':0};
+  let unclassified = 0;
+  for (const event of won) {
+    const vouchers = event.award_vouchers || [];
+    for (const voucher of vouchers) counts[voucher.kind] += voucher.kind === '기타' ? 1 : voucher.quantity;
+    counts['기타'] += (event.award_items || []).length;
+    if (!vouchers.length && event.award_voucher > 0) unclassified++;
+  }
+  el('total').textContent = formatMoney.format(cash);
+  el('summary-local').textContent = formatMoney.format(counts['지역상품권']) + '장';
+  el('summary-coupons').textContent = formatMoney.format(counts['쿠폰']) + '장';
+  el('summary-other').textContent = formatMoney.format(counts['기타'] + unclassified) + '건';
+  el('summary-unclassified').hidden = !unclassified;
+  el('summary-unclassified').textContent = '종류 미확인 ' + formatMoney.format(unclassified) + '건';
   if (state.today) {
     el('today').dateTime = state.today;
     el('today').textContent = new Intl.DateTimeFormat('ko-KR', {year:'numeric', month:'long', day:'numeric', weekday:'long', timeZone:'Asia/Seoul'}).format(new Date(state.today + 'T00:00:00+09:00'));
@@ -213,6 +223,8 @@ function showPrizeFields() {
   el('prize-fields').hidden = el('record-status').value !== '당첨';
   el('goods-fields').hidden = el('prize-fields').hidden;
   el('goods-fields').disabled = el('prize-fields').hidden;
+  el('voucher-fields').hidden = el('prize-fields').hidden;
+  el('voucher-fields').disabled = el('prize-fields').hidden;
   el('unwin-hint').hidden = !(el('prize-fields').hidden && state.items.some(item => item.id === selectedId && item.status === '당첨'));
 }
 function addGoodsRow(item) {
@@ -237,6 +249,52 @@ function addGoodsRow(item) {
   row.append(name, quantity, remove);
   el('goods-rows').append(row);
   return name;
+}
+function updateLegacyChoice() {
+  const checkbox = el('replace-legacy');
+  checkbox.disabled = !el('voucher-rows').childElementCount;
+  if (checkbox.disabled) checkbox.checked = false;
+}
+function addVoucherRow(voucher = {}) {
+  const row = node('div', null, 'voucher-row');
+  const kind = node('select');
+  for (const value of ['지역상품권', '쿠폰', '기타']) {
+    kind.add(new Option(value === '기타' ? '기타 상품권' : value, value));
+  }
+  kind.value = voucher.kind || '지역상품권';
+  const name = node('input');
+  name.required = true;
+  name.maxLength = 200;
+  name.value = voucher.name || '';
+  const quantity = node('input');
+  quantity.type = 'number';
+  quantity.min = 1;
+  quantity.max = 999999;
+  quantity.required = true;
+  quantity.value = voucher.quantity || 1;
+  const faceValue = node('input');
+  faceValue.type = 'number';
+  faceValue.min = 1;
+  faceValue.max = Number.MAX_SAFE_INTEGER;
+  faceValue.value = voucher.face_value ?? '';
+  faceValue.placeholder = '선택';
+  const exampleName = () => {
+    name.placeholder = {'지역상품권':'예: 경산사랑상품권', '쿠폰':'예: 아메리카노 교환권', '기타':'예: 도서상품권'}[kind.value];
+  };
+  kind.addEventListener('change', exampleName);
+  exampleName();
+  for (const [caption, control] of [['종류', kind], ['경품 이름', name], ['수량 (장)', quantity], ['장당 액면가 (원)', faceValue]]) {
+    const label = node('label', caption);
+    label.append(control);
+    row.append(label);
+  }
+  const remove = node('button', '삭제', 'button');
+  remove.type = 'button';
+  remove.addEventListener('click', () => { row.remove(); updateLegacyChoice(); el('add-voucher').focus(); });
+  row.append(remove);
+  el('voucher-rows').append(row);
+  updateLegacyChoice();
+  return kind;
 }
 function openDetail(item) {
   selectedId = item.id;
@@ -263,7 +321,13 @@ function openDetail(item) {
   }
   el('record-status').value = statusOf(item);
   el('record-cash').value = item.award_cash || '';
-  el('record-voucher').value = item.award_voucher || '';
+  el('voucher-rows').replaceChildren();
+  (item.award_vouchers || []).forEach(addVoucherRow);
+  const legacy = el('legacy-voucher');
+  legacy.hidden = !item.award_voucher;
+  el('legacy-voucher-note').textContent = legacy.hidden ? '' : '이전 상품권 · 종류 미확인 ' + formatMoney.format(item.award_voucher) + '원';
+  el('replace-legacy').checked = false;
+  updateLegacyChoice();
   el('goods-rows').replaceChildren();
   (item.award_items || []).forEach(addGoodsRow);
   el('record-memo').value = item.memo || '';
@@ -310,7 +374,13 @@ async function saveRecord(event) {
   const body = {id:selectedId, status, memo:el('record-memo').value};
   if (status === '당첨') {
     body.award_cash = Number(el('record-cash').value || 0);
-    body.award_voucher = Number(el('record-voucher').value || 0);
+    body.award_vouchers = Array.from(el('voucher-rows').children, row => {
+      const [name, quantity, faceValue] = row.querySelectorAll('input');
+      const voucher = {kind:row.querySelector('select').value, name:name.value.trim(), quantity:Number(quantity.value)};
+      if (faceValue.value) voucher.face_value = Number(faceValue.value);
+      return voucher;
+    });
+    if (!el('legacy-voucher').hidden && el('replace-legacy').checked && body.award_vouchers.length) body.award_voucher = 0;
     body.award_items = [...el('goods-rows').children].map(row => {
       const [name, quantity] = row.querySelectorAll('input');
       return {name:name.value.trim(), quantity:Number(quantity.value)};
@@ -386,6 +456,7 @@ for (const button of document.querySelectorAll('[data-research]')) button.addEve
 for (const button of document.querySelectorAll('[data-import]')) button.addEventListener('click', () => el('import-file').click());
 el('import-file').addEventListener('change', importFile);
 el('add-goods').addEventListener('click', () => addGoodsRow().focus());
+el('add-voucher').addEventListener('click', () => addVoucherRow().focus());
 for (const button of document.querySelectorAll('[data-records]')) {
   button.addEventListener('click', () => window.GiveawayRecords.open(button.dataset.records));
 }

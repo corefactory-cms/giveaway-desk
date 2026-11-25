@@ -11,9 +11,9 @@ window.GiveawayRecords = (() => {
     },
     results: {
       title: '응모 결과 올리기',
-      help: '당첨 안내나 발표 결과를 AI에 보내 현금·상품권·실물 경품을 정리하세요.',
-      evidence: '내가 제공한 결과 통지, 또는 내가 가리킨 공식 발표에서 내 당첨·미당첨이 확실한 건만 정리해 줘. 이름 일부가 같거나 명단에서 찾기 어렵다는 이유로 결과를 추측하지 말아 줘. 발표 전이면 보류해 줘. 현금(award_cash)과 상품권 액면가 합계(award_voucher)는 각각 원 단위 정수야. 실물 경품(award_items)에는 직접 확인한 품명과 수량을 넣어 줘. 금액·품목 중 확인되지 않은 필드는 생략해 줘. 미당첨은 경품 필드를 생략해 줘.',
-      sample: {kind: 'results', records: [{id: '목록에 있는 행사 ID', status: '당첨', award_voucher: 5000, award_items: [{name: '머그컵', quantity: 1}]}]}
+      help: '당첨 안내를 AI에 보내 현금, 지역상품권, 쿠폰, 기타 경품을 구분해 기록하세요.',
+      evidence: '내가 제공한 결과 통지나 공식 발표에서 내 당첨·미당첨이 확실한 건만 정리해 줘. 이름 일부가 같거나 명단에 보이지 않는 경우에는 보류해 줘. 실제 당첨 현금만 award_cash에 원 단위 정수로 써 줘. 지역상품권, 쿠폰(기프티콘·교환권 포함), 그 밖의 상품권은 award_vouchers에 각각 kind(지역상품권, 쿠폰, 기타), name(경품 이름), quantity(확인된 수량)를 적어 줘. 장당 액면가를 확인했을 때만 face_value(원)를 넣어 줘. 쿠폰에 적힌 상품의 시중 가격을 추정하거나 상품권을 현금에 합산하지 말아 줘. 그 밖의 실물 경품은 award_items에 이름과 수량을 적어 줘. 상품권과 쿠폰을 award_items에 중복 입력하지 말아 줘. 미당첨은 경품 필드를 생략해 줘.',
+      sample: {kind: 'results', records: [{id: '목록에 있는 행사 ID', status: '당첨', award_vouchers:[{kind:'지역상품권',name:'지역사랑상품권',quantity:1,face_value:10000},{kind:'쿠폰',name:'아메리카노 교환권',quantity:2}], award_items:[{name:'머그컵',quantity:1}]}]}
     }
   };
   const dialog = document.createElement('dialog');
@@ -112,8 +112,13 @@ window.GiveawayRecords = (() => {
       if (row.status === '당첨') {
         const rewards = [];
         if (row.award_cash) rewards.push('현금 ' + formatMoney.format(row.award_cash) + '원');
-        if (row.award_voucher) rewards.push('상품권 ' + formatMoney.format(row.award_voucher) + '원');
-        for (const item of row.award_items || []) rewards.push(item.name + ' × ' + formatMoney.format(item.quantity));
+        const vouchers = row.award_vouchers || [];
+        for (const voucher of vouchers) {
+          const value = voucher.face_value ? ' (장당 ' + formatMoney.format(voucher.face_value) + '원)' : '';
+          rewards.push(voucher.kind + ' · ' + voucher.name + ' ' + formatMoney.format(voucher.quantity) + '장' + value);
+        }
+        if (!vouchers.length && row.award_voucher) rewards.push('기타 · 상품권 (종류 미확인) ' + formatMoney.format(row.award_voucher) + '원');
+        for (const item of row.award_items || []) rewards.push('기타 · ' + item.name + ' × ' + formatMoney.format(item.quantity));
         if (rewards.length) li.append(node('p', rewards.join(' · '), 'ri-rewards'));
       }
       list.append(li);

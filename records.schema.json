@@ -23,6 +23,20 @@
         "quantity": {"type": "integer", "minimum": 1, "maximum": 999999}
       }
     },
+    "voucher": {
+      "type": "object",
+      "required": ["kind", "name", "quantity"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {"enum": ["지역상품권", "쿠폰", "기타"]},
+        "name": {"type": "string", "minLength": 1, "maxLength": 200, "pattern": "\\S"},
+        "quantity": {"type": "integer", "minimum": 1, "maximum": 999999},
+        "face_value": {
+          "description": "한 장의 확인된 액면가(원). 금액이 없거나 확인되지 않은 교환권은 생략합니다.",
+          "type": ["integer", "null"], "minimum": 1, "maximum": 9007199254740991
+        }
+      }
+    },
     "application": {
       "type": "object",
       "required": ["id", "status"],
@@ -37,7 +51,14 @@
         "id": {"$ref": "#/$defs/id"},
         "status": {"enum": ["당첨", "미당첨"]},
         "award_cash": {"$ref": "#/$defs/amount"},
-        "award_voucher": {"$ref": "#/$defs/amount"},
+        "award_voucher": {
+          "description": "이전 버전에서 금액만 남긴 상품권 기록. 새 권종은 award_vouchers에 입력합니다.",
+          "$ref": "#/$defs/amount"
+        },
+        "award_vouchers": {
+          "type": ["array", "null"], "maxItems": 100,
+          "items": {"$ref": "#/$defs/voucher"}
+        },
         "award_items": {
           "type": ["array", "null"], "maxItems": 100,
           "items": {"$ref": "#/$defs/prizeItem"}
@@ -46,7 +67,7 @@
       "if": {"properties": {"status": {"const": "미당첨"}}},
       "then": {"properties": {
         "award_cash": {"enum": [0, null]}, "award_voucher": {"enum": [0, null]},
-        "award_items": {"enum": [[], null]}
+        "award_items": {"enum": [[], null]}, "award_vouchers": {"enum": [[], null]}
       }}
     }
   }
