@@ -145,6 +145,8 @@ def initialize():
         )
         db.execute("CREATE INDEX IF NOT EXISTS identity_idx ON giveaways(title_key, organizer_key)")
         columns = {column["name"] for column in db.execute("PRAGMA table_info(giveaways)")}
+        if "first_added_on" not in columns:
+            db.execute("ALTER TABLE giveaways ADD COLUMN first_added_on TEXT")
         for field in LIST_PRIZES:
             if field not in columns:
                 db.execute(f"ALTER TABLE giveaways ADD COLUMN {field} TEXT NOT NULL DEFAULT '[]'")
@@ -195,9 +197,10 @@ def merge(db, rows):
             summary["updated"] += 1
         else:
             db.execute(
-                "INSERT INTO giveaways(id,title_key,organizer_key,public_info) VALUES(?,?,?,?)",
+                "INSERT INTO giveaways(id,title_key,organizer_key,public_info,first_added_on) VALUES(?,?,?,?,?)",
                 (proposed_id or uuid.uuid4().hex, normalize(info["name"]),
-                 normalize(info["organizer"]), json.dumps(info, ensure_ascii=False)),
+                 normalize(info["organizer"]), json.dumps(info, ensure_ascii=False),
+                 None if proposed_id == "example-reading-quiz" else today()),
             )
             summary["added"] += 1
     return summary
@@ -214,7 +217,7 @@ def import_events(payload, *, preview=False):
 
 
 def catalog(*, personal=False):
-    projection = "id,public_info" + ("," + ",".join(PRIVATE_FIELDS) if personal else "")
+    projection = "id,public_info" + (",first_added_on," + ",".join(PRIVATE_FIELDS) if personal else "")
     with closing(connect()) as db:
         result = []
         for row in db.execute(f"SELECT {projection} FROM giveaways ORDER BY rowid"):
@@ -222,6 +225,7 @@ def catalog(*, personal=False):
             item = {key: info.get(key) for key in PUBLIC_FIELDS}
             item.update(id=row["id"], entry_type="giveaway")
             if personal:
+                item["first_added_on"] = row["first_added_on"]
                 item.update({key: row[key] for key in PRIVATE_FIELDS})
                 for field in LIST_PRIZES:
                     item[field] = json.loads(row[field])

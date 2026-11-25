@@ -184,6 +184,7 @@ tbody tr:hover { background: #f9fafe; }
 .event-mark .icon { width: 18px; height: 18px; }
 .name-button { display: block; padding: 2px 0; text-align: left; line-height: 1.35; font-size: 15px; font-weight: 665; color: var(--ink); }
 .name-button:hover, .links a:hover, .source:hover { text-decoration: underline; }
+.new-badge { display: inline-block; vertical-align: .12em; margin-inline-start: .5em; padding: 1px 6px; border-radius: 4px; color: #18583e; background: #e0f3e9; font-size: 11px; font-weight: 700; white-space: nowrap; }
 .meta, .date-secondary { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
 .status { display: inline-flex; align-items: center; gap: 5px; width: fit-content; padding: 4px 8px; font-size: 12px; font-weight: 600; background: #eef1f6; color: #51617a; border-radius: 5px; white-space: nowrap; }
 .status::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }

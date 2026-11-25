@@ -34,6 +34,13 @@ function displayDate(value) {
   return value ? value.replace(/-/g, '.') : '미확인';
 }
 function statusOf(item) { return statuses.includes(item.status) ? item.status : '미응모'; }
+const kstDay = () => new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+const closed = item => Boolean(item.deadline && item.deadline < state.today);
+function recentlyAdded(item) {
+  if (!item.first_added_on || item.id === exampleId) return false;
+  const age = (Date.parse(state.today + 'T00:00:00Z') - Date.parse(item.first_added_on + 'T00:00:00Z')) / 86400000;
+  return age >= 0 && age < 7;
+}
 function notify(message, error = false) {
   const toast = el('notice');
   const active = document.querySelector('dialog[open]');
@@ -110,7 +117,7 @@ function renderSchedule() {
 }
 function renderSummary() {
   const won = state.items.filter(item => statusOf(item) === '당첨');
-  el('dashboard-events').textContent = formatMoney.format(state.items.filter(item => statusOf(item) !== '관심 없음').length) + '건';
+  el('dashboard-events').textContent = formatMoney.format(state.items.filter(item => statusOf(item) !== '관심 없음' && !closed(item)).length) + '건';
   el('dashboard-wins').textContent = formatMoney.format(won.length) + '건';
   const cash = won.reduce((sum, entry) => sum + Number(entry.award_cash || 0), 0);
   const counts = {'지역상품권':0, '쿠폰':0, '기타':0};
@@ -139,7 +146,12 @@ function renderRows() {
   const key = el('sort').value;
   const filtered = state.items.filter(item => {
     const current = statusOf(item);
-    if (tab === '전체' ? current === '관심 없음' : current !== tab) return false;
+    if (tab === '마감') {
+      if (!closed(item) || current === '관심 없음') return false;
+    } else {
+      if (tab === '전체' ? current === '관심 없음' : current !== tab) return false;
+      if ((tab === '전체' || tab === '미응모') && closed(item)) return false;
+    }
     if (category && item.category !== category) return false;
     return !search || [item.name, item.organizer, item.prize, item.description].some(value => String(value || '').toLowerCase().includes(search));
   }).sort((a,b) => {
@@ -159,6 +171,11 @@ function renderRows() {
   for (const item of filtered) {
     const row = node('tr');
     const name = node('button', item.name, 'name-button');
+    if (recentlyAdded(item)) {
+      const badge = node('span', '신규', 'new-badge');
+      badge.title = displayDate(item.first_added_on) + ' 처음 등록 · 7일간 표시';
+      name.append(badge);
+    }
     name.type = 'button';
     name.addEventListener('click', () => openDetail(item));
     const event = node('div', null, 'event-entry');
@@ -448,7 +465,7 @@ async function importFile(event) {
   } catch (error) { notify(error instanceof SyntaxError ? 'JSON 파일 형식을 확인해 주세요.' : error.message, true); }
   finally { input.value = ''; }
 }
-for (const value of ['전체', ...statuses]) {
+for (const value of ['전체', ...statuses, '마감']) {
   const button = node('button', value);
   button.type = 'button';
   button.dataset.tab = value;
@@ -481,7 +498,20 @@ for (const anchor of document.querySelectorAll('.brand, .side-nav a, .dashboard-
 }
 window.addEventListener('hashchange', () => showPage(true));
 showPage();
+function updateDay() {
+  if (hasLoaded && state.today !== kstDay()) {
+    state.today = kstDay();
+    renderSummary();
+    renderRows();
+  }
+}
+function watchMidnight() {
+  const remaining = 86400000 - (Date.now() + 9 * 3600000) % 86400000;
+  setTimeout(() => { updateDay(); watchMidnight(); }, remaining);
+}
+watchMidnight();
 document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) updateDay();
   if (!document.hidden && !document.querySelector('dialog[open]')) refresh();
 });
 setInterval(() => { if (!document.hidden && !document.querySelector('dialog[open]')) refresh(); }, 30000);

@@ -4,6 +4,8 @@
 
 [Windows용 ZIP 다운로드](https://github.com/corefactory-cms/giveaway-desk/releases/latest/download/GiveawayDesk-Windows-x64.zip) · [에이전트용 리서치 안내](AGENTS.md) · [입력 파일 형식](research.schema.json)
 
+[휴대폰에서 웹 베타 열기](https://corefactory-cms.github.io/eungmo-beta/) · [웹 베타 소스](https://github.com/corefactory-cms/eungmo-beta)
+
 ![가상 예시 한 건으로 시작하는 응모수첩 첫 화면](docs/screen.png)
 
 ## 내 PC에서 시작하기
@@ -36,6 +38,10 @@
 > https://github.com/corefactory-cms/giveaway-desk 의 README와 AGENTS.md를 읽고 내 PC의 응모수첩을 업데이트해 줘. 처음이면 Windows 배포판을 준비해 줘. 오늘 한국 기준으로 누구나 참여할 수 있는 퀴즈·설문·추첨을 검색해. 공식 공고에서 마감일, 경품, 응모 조건과 발표일을 확인하고, 기존 행사와 대조해서 추가하거나 갱신해 줘. 작업 후 새로 추가한 건수, 변경한 건수, 마감이 가까운 행사 3개를 알려 줘. 실제 응모는 내가 할게.
 
 웹 채팅에서 파일을 만들어 받을 때는 마지막에 **“내 PC에서 명령을 실행하는 대신, 응모수첩에 가져올 JSON 파일 한 개를 줘”**라고 덧붙이세요. 앱에서 JSON을 가져오면 같은 방식으로 반영됩니다. 앱 자체에는 유료 AI API 키가 필요하지 않습니다. 사용하는 외부 에이전트의 요금과 사용 한도는 해당 서비스 계정을 따릅니다.
+
+처음 가져온 실제 행사는 목록에 **신규**로 표시합니다. 한국 시간 기준 등록 당일부터 7일간 보이며, 같은 공고의 경품이나 발표일을 수정해도 최초 등록일은 유지됩니다. 예시 행사와 최초 등록일을 알 수 없는 이전 버전의 항목은 신규 표시에서 제외됩니다.
+
+마감 날짜가 지난 행사는 **마감** 탭에서 찾을 수 있습니다. 마감일을 모르는 행사는 그대로 표시되고, 응모했거나 당첨된 기록은 해당 탭에 계속 남습니다.
 
 ## 소스에서 실행하기
 
