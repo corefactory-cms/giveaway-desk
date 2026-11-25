@@ -109,6 +109,12 @@ h1 { font-size: clamp(29px,2.55vw,40px); font-weight: 755; line-height: 1.18; le
   .record-actions { gap: 5px; }
 }
 .summary { display: grid; grid-template-columns: minmax(0,.98fr) minmax(0,1.02fr); gap: 18px; align-items: stretch; }
+.dashboard-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr)); gap:12px; margin-top:18px; }
+.dashboard-links a { display:flex; align-items:center; gap:10px; padding:16px 19px; border:1px solid var(--line); border-radius:10px; background:white; font-weight:650; }
+.dashboard-links a:hover { border-color:#9aaccc; color:var(--blue); }
+.dashboard-links strong { margin-left:auto; font-variant-numeric:tabular-nums; }
+.dashboard-links a span:last-child { color:var(--muted); }
+main > [data-page]:not([hidden]) { margin-top:0; }
 .balance, .agenda, .ledger { border-radius: 18px; }
 .balance { display: flex; flex-direction: column; background: var(--navy); color: #fff; overflow: hidden; }
 .balance-body { flex: 1; min-height: 146px; position: relative; isolation: isolate; padding: 26px 29px 22px; }

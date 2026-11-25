@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT))  # Windows embedded Python starts with an isolated
 import storage
 
 DEFAULT_PORT = 18437
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.2.2"
 ASSETS = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),

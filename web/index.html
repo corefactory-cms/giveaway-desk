@@ -34,9 +34,9 @@
 <div class="shell">
   <aside class="sidebar" aria-label="메뉴">
     <a class="brand" href="#top" aria-label="응모수첩 홈"><span class="brand-mark"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-ticket"></use></svg></span>응모수첩</a>
-    <nav class="side-nav">
-      <a href="#top" class="current" aria-current="location"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-layout"></use></svg>대시보드</a>
-      <a href="#ledger" data-view="전체"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-list"></use></svg>응모 목록</a>
+    <nav class="side-nav" aria-label="주 화면">
+      <a href="#top" class="current" aria-current="page"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-layout"></use></svg>대시보드</a>
+      <a href="#ledger"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-list"></use></svg>응모 목록</a>
       <a href="#inventory"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-award"></use></svg>당첨 보관함</a>
     </nav>
     <div class="utilities">
@@ -44,10 +44,10 @@
     </div>
   </aside>
   <main id="top">
-    <header class="page-head"><div><h1>내 응모 현황</h1><div class="today"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg><time id="today"></time></div></div>
+    <header class="page-head"><div><h1 id="page-title" tabindex="-1">내 응모 현황</h1><div class="today"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg><time id="today"></time></div></div>
       <button type="button" class="action-primary" data-research aria-haspopup="dialog"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-spark"></use></svg>조사하기</button>
     </header>
-    <div class="summary">
+    <div data-page="top" data-title="내 응모 현황"><div class="summary">
       <section class="balance" aria-labelledby="balance-label">
         <div class="balance-body">
           <svg class="ticket-art" aria-hidden="true" width="230" height="175" viewBox="0 0 230 175">
@@ -90,9 +90,13 @@
         <div id="schedule" class="schedule"></div>
       </section>
     </div>
-    <section id="inventory" aria-label="당첨 보관함"></section>
-    <section id="ledger" class="ledger" aria-labelledby="list-title">
-      <div class="list-heading ledger-head"><h2 id="list-title">응모 목록 <small id="item-count"></small></h2><div class="record-actions">
+    <div class="dashboard-links">
+      <a href="#ledger"><span>응모 목록</span><strong id="dashboard-events">—</strong><span aria-hidden="true">→</span></a>
+      <a href="#inventory"><span>당첨 보관함</span><strong id="dashboard-wins">—</strong><span aria-hidden="true">→</span></a>
+    </div></div>
+    <section id="inventory" aria-label="당첨 보관함" data-page="inventory" data-title="당첨 보관함" hidden></section>
+    <section id="ledger" class="ledger" aria-labelledby="list-title" data-page="ledger" data-title="응모 목록" hidden>
+      <div class="list-heading ledger-head"><h2 id="list-title">이벤트 <small id="item-count"></small></h2><div class="record-actions">
         <button type="button" class="import-button" data-records="applications" aria-haspopup="dialog">신청 결과 올리기</button>
         <button type="button" class="import-button" data-records="results" aria-haspopup="dialog">응모 결과 올리기</button>
       </div></div>

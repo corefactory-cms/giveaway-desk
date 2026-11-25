@@ -266,7 +266,7 @@
     container.classList.add('prize-inventory');
     const header = element('div', 'inv-head');
     const titleBlock = element('div', 'inv-heading');
-    const title = element('h2', '', '당첨 보관함');
+    const title = element('h2', '', '내 경품');
     view.count = element('span', 'inv-win-count');
     titleBlock.append(title, view.count);
     const action = element('button', 'inv-record', '당첨 결과 올리기');

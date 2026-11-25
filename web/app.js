@@ -110,6 +110,8 @@ function renderSchedule() {
 }
 function renderSummary() {
   const won = state.items.filter(item => statusOf(item) === '당첨');
+  el('dashboard-events').textContent = formatMoney.format(state.items.filter(item => statusOf(item) !== '관심 없음').length) + '건';
+  el('dashboard-wins').textContent = formatMoney.format(won.length) + '건';
   const cash = won.reduce((sum, entry) => sum + Number(entry.award_cash || 0), 0);
   const counts = {'지역상품권':0, '쿠폰':0, '기타':0};
   let unclassified = 0;
@@ -204,16 +206,25 @@ function renderRows() {
     } else openResearch();
   };
 }
-function selectTab(value, section = 'ledger') {
+function selectTab(value) {
   tab = value;
   document.querySelectorAll('#status-tabs button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.tab === tab)));
+  renderRows();
+}
+function showPage(focusHeading = false) {
+  const panes = [...document.querySelectorAll('main > [data-page]')];
+  const active = panes.find(pane => pane.dataset.page === location.hash.slice(1)) || panes[0];
+  for (const pane of panes) pane.hidden = pane !== active;
   document.querySelectorAll('.side-nav a').forEach(anchor => {
-    const current = anchor.hash === '#' + section;
+    const current = anchor.hash.slice(1) === active.dataset.page;
     anchor.classList.toggle('current', current);
-    if (current) anchor.setAttribute('aria-current', 'location');
+    if (current) anchor.setAttribute('aria-current', 'page');
     else anchor.removeAttribute('aria-current');
   });
-  renderRows();
+  el('page-title').textContent = active.dataset.title;
+  document.title = active.dataset.title + ' · 응모수첩';
+  if (focusHeading) el('page-title').focus({preventScroll:true});
+  window.scrollTo({top:0, behavior:'instant'});
 }
 function addFact(key, value) {
   if (!value) return;
@@ -460,11 +471,16 @@ el('add-voucher').addEventListener('click', () => addVoucherRow().focus());
 for (const button of document.querySelectorAll('[data-records]')) {
   button.addEventListener('click', () => window.GiveawayRecords.open(button.dataset.records));
 }
-document.querySelectorAll('.brand, .side-nav a').forEach(anchor => anchor.addEventListener('click', () => {
-  el('search').value = '';
-  el('category').value = '';
-  selectTab(anchor.dataset.view || '전체', anchor.hash.slice(1));
-}));
+for (const anchor of document.querySelectorAll('.brand, .side-nav a, .dashboard-links a')) {
+  anchor.addEventListener('click', event => {
+    if (event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    event.preventDefault();
+    if (location.hash !== anchor.hash) history.pushState(null, '', anchor.hash);
+    showPage(true);
+  });
+}
+window.addEventListener('hashchange', () => showPage(true));
+showPage();
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && !document.querySelector('dialog[open]')) refresh();
 });
