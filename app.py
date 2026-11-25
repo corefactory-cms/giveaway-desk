@@ -18,12 +18,17 @@ sys.path.insert(0, str(ROOT))  # Windows embedded Python starts with an isolated
 import storage
 
 DEFAULT_PORT = 18437
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 ASSETS = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/index.html": ("index.html", "text/html; charset=utf-8"),
     "/app.css": ("app.css", "text/css; charset=utf-8"),
     "/app.js": ("app.js", "text/javascript; charset=utf-8"),
+    "/agents.js": ("agents.js", "text/javascript; charset=utf-8"),
+    "/records.js": ("records.js", "text/javascript; charset=utf-8"),
+    "/records.css": ("records.css", "text/css; charset=utf-8"),
+    "/inventory.js": ("inventory.js", "text/javascript; charset=utf-8"),
+    "/inventory.css": ("inventory.css", "text/css; charset=utf-8"),
     "/fonts/PretendardVariable.woff2": ("fonts/PretendardVariable.woff2", "font/woff2"),
 }
 
@@ -95,7 +100,9 @@ class Handler(BaseHTTPRequestHandler):
             token.encode("utf-8"), self.server.token.encode("ascii")
         ):
             return self.reply(403, {"error": "화면을 새로고침한 뒤 다시 시도해 주세요."})
-        handlers = {"/api/import": storage.import_events, "/api/record": storage.save_record}
+        handlers = {"/api/import": storage.import_events, "/api/record": storage.save_record,
+                    "/api/records/preview": lambda data: storage.import_records(data, preview=True),
+                    "/api/records/apply": storage.import_records}
         handler = handlers.get(self.path)
         if not handler:
             return self.reply(404, {"error": "페이지를 찾을 수 없습니다."})

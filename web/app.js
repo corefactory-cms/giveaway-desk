@@ -197,9 +197,8 @@ function renderRows() {
 function selectTab(value, section = 'ledger') {
   tab = value;
   document.querySelectorAll('#status-tabs button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.tab === tab)));
-  const activeView = section === 'top' ? null : (value === '당첨' ? '당첨' : '전체');
   document.querySelectorAll('.side-nav a').forEach(anchor => {
-    const current = (anchor.dataset.view || null) === activeView;
+    const current = anchor.hash === '#' + section;
     anchor.classList.toggle('current', current);
     if (current) anchor.setAttribute('aria-current', 'location');
     else anchor.removeAttribute('aria-current');
@@ -212,6 +211,32 @@ function addFact(key, value) {
 }
 function showPrizeFields() {
   el('prize-fields').hidden = el('record-status').value !== '당첨';
+  el('goods-fields').hidden = el('prize-fields').hidden;
+  el('goods-fields').disabled = el('prize-fields').hidden;
+  el('unwin-hint').hidden = !(el('prize-fields').hidden && state.items.some(item => item.id === selectedId && item.status === '당첨'));
+}
+function addGoodsRow(item) {
+  const row = node('div', null, 'goods-row');
+  const name = node('input');
+  name.setAttribute('aria-label', '경품명');
+  name.placeholder = '예: 텀블러';
+  name.required = true;
+  name.maxLength = 200;
+  name.value = item?.name || '';
+  const quantity = node('input');
+  quantity.type = 'number';
+  quantity.min = 1;
+  quantity.max = 999999;
+  quantity.step = 1;
+  quantity.required = true;
+  quantity.setAttribute('aria-label', '수량');
+  quantity.value = item?.quantity || 1;
+  const remove = node('button', '삭제', 'button');
+  remove.type = 'button';
+  remove.addEventListener('click', () => { row.remove(); el('add-goods').focus(); });
+  row.append(name, quantity, remove);
+  el('goods-rows').append(row);
+  return name;
 }
 function openDetail(item) {
   selectedId = item.id;
@@ -239,6 +264,8 @@ function openDetail(item) {
   el('record-status').value = statusOf(item);
   el('record-cash').value = item.award_cash || '';
   el('record-voucher').value = item.award_voucher || '';
+  el('goods-rows').replaceChildren();
+  (item.award_items || []).forEach(addGoodsRow);
   el('record-memo').value = item.memo || '';
   showPrizeFields();
   el('detail').showModal();
@@ -260,6 +287,9 @@ async function loadState() {
   setOptions(el('category'), [...new Set(state.items.map(item => item.category).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ko')), '모든 종류');
   renderSummary();
   renderRows();
+  window.GiveawayInventory.render(el('inventory'), state.items, {
+    openDetail, openResults: () => window.GiveawayRecords.open('results')
+  });
 }
 async function refresh() {
   try { await loadState(); }
@@ -281,6 +311,10 @@ async function saveRecord(event) {
   if (status === '당첨') {
     body.award_cash = Number(el('record-cash').value || 0);
     body.award_voucher = Number(el('record-voucher').value || 0);
+    body.award_items = [...el('goods-rows').children].map(row => {
+      const [name, quantity] = row.querySelectorAll('input');
+      return {name:name.value.trim(), quantity:Number(quantity.value)};
+    });
   }
   el('save').disabled = true;
   try {
@@ -298,20 +332,25 @@ const researchPrompt = [
   '행사마다 이름, 주최, 종류, 행사 설명(description), 경품, 응모 마감, 당첨 발표일이나 공지 방법, 공식 공고 및 결과 링크, 참가 자격, 응모 방법, 자료 확인일을 적으세요. 확인할 수 없는 날짜는 비워 두고, 기존 항목을 갱신할 때는 같은 id를 사용하세요.',
   '로컬 파일 접근이 가능하면 agent.py의 paths로 저장 위치를 확인하고, catalog로 기존 자료를 읽은 뒤 validate와 import를 순서대로 실행하세요. 로컬 파일에 접근할 수 없으면 앱에서 가져올 수 있는 { "items": [...] } JSON 파일을 제공하세요. 개인의 응모 상태, 당첨 금액, 메모는 연구 자료에 포함하지 마세요.'
 ].join('\n\n');
-function openResearch() {
-  el('prompt').value = researchPrompt;
-  el('research').showModal();
+function researchFor(agent) {
+  const instructions = {
+    '피클':'피클에서 PC 파일을 다룰 수 있으면 로컬 도구로 목록을 갱신하고 반영 건수를 알려주세요.',
+    '클로드':'Claude에서 PC 작업이 가능하면 로컬 도구를 사용하고, 웹 채팅이면 다운로드 가능한 JSON을 주세요.',
+    '지피티':'ChatGPT에서 웹 검색으로 원문을 확인하고, 앱에서 열 수 있도록 조사 결과를 내려받을 JSON 파일로 주세요.',
+    '제미나이':'Gemini에서 각 행사 원문을 확인하고, UTF-8 JSON 파일 또는 복사해서 파일로 저장할 수 있는 JSON을 주세요.'
+  };
+  const catalog = state.items.filter(item => item.id !== exampleId)
+    .map(({id,name,organizer,deadline,url}) => ({id,name,organizer,deadline,url}));
+  return [instructions[agent], researchPrompt, '현재 공개 행사 목록\n' + JSON.stringify(catalog)].filter(Boolean).join('\n\n');
 }
-async function copyPrompt() {
-  try {
-    await navigator.clipboard.writeText(researchPrompt);
-    notify('리서치 요청문을 복사했습니다.');
-  } catch {
-    el('prompt').focus();
-    el('prompt').select();
-    if (document.execCommand('copy')) notify('리서치 요청문을 복사했습니다.');
-    else notify('선택한 요청문을 복사해 주세요.');
-  }
+function openResearch() {
+  el('research-feedback').textContent = '';
+  el('prompt').value = researchFor('');
+  window.GiveawayAgentPicker(el('research-agents'), agent => {
+    el('prompt').value = researchFor(agent);
+    return el('prompt').value;
+  }, message => { el('research-feedback').textContent = message; });
+  el('research').showModal();
 }
 async function importFile(event) {
   const input = event.target;
@@ -346,11 +385,14 @@ for (const button of document.querySelectorAll('[data-schedule]')) button.addEve
 for (const button of document.querySelectorAll('[data-research]')) button.addEventListener('click', openResearch);
 for (const button of document.querySelectorAll('[data-import]')) button.addEventListener('click', () => el('import-file').click());
 el('import-file').addEventListener('change', importFile);
-el('copy').addEventListener('click', copyPrompt);
+el('add-goods').addEventListener('click', () => addGoodsRow().focus());
+for (const button of document.querySelectorAll('[data-records]')) {
+  button.addEventListener('click', () => window.GiveawayRecords.open(button.dataset.records));
+}
 document.querySelectorAll('.brand, .side-nav a').forEach(anchor => anchor.addEventListener('click', () => {
   el('search').value = '';
   el('category').value = '';
-  selectTab(anchor.dataset.view || '전체', anchor.hash === '#top' ? 'top' : 'ledger');
+  selectTab(anchor.dataset.view || '전체', anchor.hash.slice(1));
 }));
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && !document.querySelector('dialog[open]')) refresh();

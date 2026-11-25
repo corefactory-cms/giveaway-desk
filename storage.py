@@ -21,7 +21,9 @@ PUBLIC_FIELDS = (
     "how_to", "checked_on",
 )
 REQUIRED = ("name", "organizer", "url", "checked_on")
-PRIVATE_FIELDS = ("status", "award_cash", "award_voucher", "memo")
+MONEY_FIELDS = ("award_cash", "award_voucher")
+PRIZE_FIELDS = (*MONEY_FIELDS, "award_items")
+PRIVATE_FIELDS = ("status", *PRIZE_FIELDS, "memo")
 STATUSES = ("미응모", "응모", "당첨", "미당첨", "관심 없음")
 ID_PATTERN = re.compile(r"[a-zA-Z0-9_-]{1,100}")
 
@@ -60,7 +62,7 @@ def load_file(path):
     with path.open("rb") as source:
         raw = source.read(MAX_BYTES + 1)
     if len(raw) > MAX_BYTES:
-        raise ValueError("리서치 파일은 최대 5 MiB입니다.")
+        raise ValueError("JSON 파일은 최대 5 MiB입니다.")
     return json.loads(raw.decode("utf-8-sig"))
 
 
@@ -140,6 +142,9 @@ def initialize():
                memo TEXT NOT NULL DEFAULT '')"""
         )
         db.execute("CREATE INDEX IF NOT EXISTS identity_idx ON giveaways(title_key, organizer_key)")
+        columns = {column["name"] for column in db.execute("PRAGMA table_info(giveaways)")}
+        if "award_items" not in columns:
+            db.execute("ALTER TABLE giveaways ADD COLUMN award_items TEXT NOT NULL DEFAULT '[]'")
         if SEED.is_file() and not db.execute("SELECT 1 FROM meta WHERE key='seed'").fetchone():
             merge(db, validate_payload(load_file(SEED)))
             db.execute("INSERT INTO meta VALUES ('seed', '1')")
@@ -215,8 +220,36 @@ def catalog(*, personal=False):
             item.update(id=row["id"], entry_type="giveaway")
             if personal:
                 item.update({key: row[key] for key in PRIVATE_FIELDS})
+                item["award_items"] = json.loads(row["award_items"])
             result.append(item)
     return result
+
+
+def validate_prizes(fields):
+    for key in MONEY_FIELDS:
+        if key in fields and (type(fields[key]) is not int or not 0 <= fields[key] < 2**53):
+            raise ValueError("당첨 금액은 0원 이상의 원 단위 정수로 입력하세요.")
+    if "award_items" not in fields:
+        return
+    items = fields["award_items"]
+    if not isinstance(items, list) or len(items) > 100:
+        raise ValueError("실물 경품은 한 행사에 최대 100종까지 입력할 수 있습니다.")
+    normalized = []
+    seen = set()
+    for item in items:
+        if not isinstance(item, dict) or item.keys() != {"name", "quantity"}:
+            raise ValueError("실물 경품에는 이름(name)과 수량(quantity)이 필요합니다.")
+        name, quantity = item["name"], item["quantity"]
+        if not isinstance(name, str) or not 1 <= len(name.strip()) <= 200:
+            raise ValueError("실물 경품 이름을 1~200자로 입력하세요.")
+        if type(quantity) is not int or not 1 <= quantity <= 999999:
+            raise ValueError("실물 경품 수량을 1~999999 사이의 정수로 입력하세요.")
+        key = normalize(name)
+        if key in seen:
+            raise ValueError(f"같은 경품은 수량을 합쳐 한 번만 입력하세요: {name.strip()}")
+        seen.add(key)
+        normalized.append({"name": name.strip(), "quantity": quantity})
+    fields["award_items"] = normalized
 
 
 def save_record(change):
@@ -224,17 +257,114 @@ def save_record(change):
         raise ValueError("수정할 행사의 id가 필요합니다.")
     updates = {key: change[key] for key in PRIVATE_FIELDS if key in change}
     if set(change) - {"id", *PRIVATE_FIELDS} or not updates:
-        raise ValueError("응모 상태, 당첨 금액, 메모를 수정할 수 있습니다.")
+        raise ValueError("응모 상태, 당첨 경품, 메모를 수정할 수 있습니다.")
     if "status" in updates and updates["status"] not in STATUSES:
         raise ValueError("응모 상태를 확인해 주세요.")
     if "memo" in updates and (not isinstance(updates["memo"], str) or len(updates["memo"]) > 8000):
         raise ValueError("메모는 8,000자 이내로 입력하세요.")
-    for key in ("award_cash", "award_voucher"):
-        if key in updates and (type(updates[key]) is not int or not 0 <= updates[key] < 2**53):
-            raise ValueError("당첨 금액은 0원 이상의 원 단위 정수로 입력하세요.")
-    setters = ", ".join(f"{key}=?" for key in updates)
+    validate_prizes(updates)
     with closing(connect()) as db, db:
-        cur = db.execute(f"UPDATE giveaways SET {setters} WHERE id=?", (*updates.values(), change["id"]))
-        if not cur.rowcount:
+        db.execute("BEGIN IMMEDIATE")
+        row = db.execute("SELECT status FROM giveaways WHERE id=?", (change["id"],)).fetchone()
+        if row is None:
             raise ValueError("수정할 행사를 찾을 수 없습니다.")
+        if updates.get("status", row["status"]) != "당첨":
+            if any(updates.get(k) for k in PRIZE_FIELDS):
+                raise ValueError("당첨된 행사의 경품만 기록할 수 있습니다.")
+            if "status" in updates:
+                updates.update(award_cash=0, award_voucher=0, award_items=[])
+        if "award_items" in updates:
+            updates["award_items"] = json.dumps(updates["award_items"], ensure_ascii=False)
+        setters = ", ".join(f"{key}=?" for key in updates)
+        db.execute(f"UPDATE giveaways SET {setters} WHERE id=?", (*updates.values(), change["id"]))
     return {"saved": True}
+
+
+def confirmed_record(kind, record, db):
+    if not isinstance(record, dict) or "status" not in record:
+        raise ValueError("행사 id와 확인된 상태(status)가 필요합니다.")
+    row_id = record.get("id")
+    if not isinstance(row_id, str) or not ID_PATTERN.fullmatch(row_id):
+        raise ValueError("기존 행사 목록의 id를 넣어 주세요.")
+    allowed = {"id", "status"}
+    if kind == "results":
+        allowed.update(PRIZE_FIELDS)
+    extra = record.keys() - allowed
+    if extra:
+        raise ValueError("개인 기록 양식에 없는 필드입니다: " + ", ".join(sorted(extra)))
+    status = record["status"]
+    statuses = ("응모",) if kind == "applications" else ("당첨", "미당첨")
+    if status not in statuses:
+        raise ValueError("이 파일의 status에는 " + " 또는 ".join(statuses) + "를 입력하세요.")
+    prizes = {key: record[key] for key in PRIZE_FIELDS if record.get(key) is not None}
+    validate_prizes(prizes)
+    if status != "당첨" and any(prizes.values()):
+        raise ValueError("당첨된 행사의 경품만 기록할 수 있습니다.")
+    row = db.execute(
+        "SELECT public_info,status,award_cash,award_voucher,award_items FROM giveaways WHERE id=?",
+        (row_id,),
+    ).fetchone()
+    if row is None:
+        raise ValueError(f"목록에 없는 행사 id입니다: {row_id}. 공개 행사부터 추가해 주세요.")
+    name = json.loads(row["public_info"])["name"]
+    previous = row["status"]
+    saved = {"status": previous, "award_cash": row["award_cash"], "award_voucher": row["award_voucher"],
+             "award_items": json.loads(row["award_items"])}
+    after = dict(saved)
+    if previous in ("당첨", "미당첨") and previous != status:
+        if kind == "results":
+            raise ValueError(f"{name}의 기존 결과({previous})와 다릅니다. 행사 상세에서 먼저 확인해 주세요.")
+        status = previous  # An older application receipt is compatible with a later result.
+    after["status"] = status
+    if kind == "results" and status == "당첨":
+        # Older versions could leave hidden prize amounts behind on a non-winning record.
+        if previous != "당첨":
+            after.update(award_cash=0, award_voucher=0, award_items=[])
+        for key in MONEY_FIELDS:
+            if not prizes.get(key):
+                continue
+            if after[key] and prizes[key] != after[key]:
+                raise ValueError(f"{name}의 기존 당첨 금액과 다릅니다. 행사 상세에서 금액을 확인해 주세요.")
+            after[key] = prizes[key]
+        if prizes.get("award_items"):
+            existing = {normalize(item["name"]): item for item in after["award_items"]}
+            for item in prizes["award_items"]:
+                key = normalize(item["name"])
+                if key in existing and item["quantity"] != existing[key]["quantity"]:
+                    raise ValueError(f'{name}의 기존 {item["name"]} 수량과 다릅니다. 행사 상세에서 확인해 주세요.')
+                existing.setdefault(key, item)
+            if len(existing) > 100:
+                raise ValueError(f"{name}의 실물 경품이 최대 100종을 초과합니다.")
+            after["award_items"] = list(existing.values())
+    return {"id": row_id, "name": name, "previous_status": previous, **after, "changed": saved != after}
+
+
+def import_records(payload, *, preview=False):
+    if not isinstance(payload, dict) or payload.keys() != {"kind", "records"}:
+        raise ValueError("개인 기록 파일에는 kind와 records 배열이 필요합니다.")
+    kind, records = payload["kind"], payload["records"]
+    if kind not in ("applications", "results"):
+        raise ValueError("kind는 applications(신청) 또는 results(결과)여야 합니다.")
+    if not isinstance(records, list) or not 1 <= len(records) <= 3000:
+        raise ValueError("기록은 한 번에 1~3,000건을 넣을 수 있습니다.")
+    seen = set()
+    reviewed = []
+    with closing(connect()) as db, db:
+        db.execute("BEGIN" if preview else "BEGIN IMMEDIATE")
+        for number, record in enumerate(records, 1):
+            try:
+                item = confirmed_record(kind, record, db)
+                if item["id"] in seen:
+                    raise ValueError("같은 행사 id는 한 파일에 한 번만 넣어 주세요.")
+            except ValueError as exc:
+                raise ValueError(f"{number}번째 기록 · {exc}") from exc
+            seen.add(item["id"])
+            reviewed.append(item)
+            if item["changed"] and not preview:
+                db.execute(
+                    "UPDATE giveaways SET status=?,award_cash=?,award_voucher=?,award_items=? WHERE id=?",
+                    (item["status"], item["award_cash"], item["award_voucher"],
+                     json.dumps(item["award_items"], ensure_ascii=False), item["id"]),
+                )
+    changed = sum(item["changed"] for item in reviewed)
+    return {"changed": changed, "unchanged": len(reviewed) - changed, "records": reviewed}

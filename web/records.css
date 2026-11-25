@@ -1,0 +1,89 @@
+.record-import {
+  width: 560px;
+  overscroll-behavior: contain;
+}
+.record-import .dialog-content { padding: 24px; }
+.record-import .dialog-lead { margin: 7px 30px 18px 0; }
+.record-import section h3 { margin: 0; font-size: 16px; }
+.ri-ask {
+  margin-bottom: 19px;
+  padding-block: 16px;
+  border-block: 1px solid var(--line);
+}
+.ri-guide {
+  margin: 6px 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.ri-ask details { margin-top: 10px; }
+.ri-ask summary {
+  cursor: pointer;
+  width: fit-content;
+  padding-block: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.ri-ask .prompt { margin-top: 6px; border: 1px solid var(--line); }
+.ri-all {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+.ri-all input { accent-color: var(--blue); }
+.ri-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+.ri-upload .field-label { margin-top: 10px; }
+.ri-upload textarea {
+  width: 100%;
+  min-height: 70px;
+  display: block;
+  padding: 9px 11px;
+  border: 1px solid #bcc9da;
+  border-radius: 8px;
+  resize: vertical;
+  line-height: 1.45;
+  font-size: 14px;
+}
+.record-import button:disabled { cursor: default; }
+#ri-feedback {
+  margin: 9px 0 0;
+  min-height: 1.4em;
+  line-height: 1.4;
+  color: var(--blue);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+#ri-feedback.ri-error { color: #99333a; }
+.ri-review { margin-top: 14px; }
+#ri-preview-list {
+  margin: 8px 0 0;
+  max-height: 220px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  list-style: none;
+}
+#ri-preview-list li { padding: 11px 12px; line-height: 1.4; }
+#ri-preview-list li + li { border-top: 1px solid var(--line); }
+#ri-preview-list strong { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+.ri-change { color: var(--muted); font-size: 12px; }
+#ri-preview-list p { margin: 3px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+#ri-preview-list .ri-rewards { color: var(--ink); }
+@media (max-width: 600px) {
+  .record-import .dialog-content { padding: 17px; }
+  .record-import .dialog-lead { margin-right: 0; }
+  .record-import .dialog-footer { flex-wrap: wrap; }
+}

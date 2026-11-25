@@ -8,7 +8,12 @@
   <link rel="icon" href="data:,">
   <link rel="preload" href="/fonts/PretendardVariable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./app.css">
+  <link rel="stylesheet" href="./inventory.css">
+  <link rel="stylesheet" href="./records.css">
+  <script defer src="./agents.js"></script>
+  <script defer src="./inventory.js"></script>
   <script defer src="./app.js"></script>
+  <script defer src="./records.js"></script>
 </head>
 <body>
 <svg class="symbols" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
@@ -32,7 +37,7 @@
     <nav class="side-nav">
       <a href="#top" class="current" aria-current="location"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-layout"></use></svg>대시보드</a>
       <a href="#ledger" data-view="전체"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-list"></use></svg>응모 목록</a>
-      <a href="#ledger" data-view="당첨"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-award"></use></svg>당첨 기록</a>
+      <a href="#inventory"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-award"></use></svg>당첨 보관함</a>
     </nav>
     <div class="utilities">
       <a class="github" href="https://github.com/corefactory-cms/giveaway-desk" target="_blank" rel="noopener noreferrer"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-code"></use></svg><span>GitHub 저장소</span><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-arrow"></use></svg></a>
@@ -40,7 +45,7 @@
   </aside>
   <main id="top">
     <header class="page-head"><div><h1>내 응모 현황</h1><div class="today"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-calendar"></use></svg><time id="today"></time></div></div>
-      <button type="button" class="action-primary" data-research><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-spark"></use></svg>AI 리서치 업데이트</button>
+      <button type="button" class="action-primary" data-research aria-haspopup="dialog"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-spark"></use></svg>조사하기</button>
     </header>
     <div class="summary">
       <section class="balance" aria-labelledby="balance-label">
@@ -84,8 +89,12 @@
         <div id="schedule" class="schedule"></div>
       </section>
     </div>
+    <section id="inventory" aria-label="당첨 보관함"></section>
     <section id="ledger" class="ledger" aria-labelledby="list-title">
-      <div class="list-heading"><h2 id="list-title">응모 목록 <small id="item-count"></small></h2><button type="button" class="import-button" data-import><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-upload"></use></svg>JSON 가져오기</button></div>
+      <div class="list-heading ledger-head"><h2 id="list-title">응모 목록 <small id="item-count"></small></h2><div class="record-actions">
+        <button type="button" class="import-button" data-records="applications" aria-haspopup="dialog">신청 결과 올리기</button>
+        <button type="button" class="import-button" data-records="results" aria-haspopup="dialog">응모 결과 올리기</button>
+      </div></div>
       <div class="tabs" id="status-tabs" aria-label="상태별 목록"></div>
       <div class="toolbar">
         <label class="search-field"><svg aria-hidden="true" class="icon " viewBox="0 0 24 24"><use href="#icon-search"></use></svg><input id="search" type="search" aria-label="이벤트·주최·경품 검색" placeholder="이벤트·주최·경품 검색"></label>
@@ -98,10 +107,12 @@
   </main>
 </div>
 <dialog id="research" aria-labelledby="research-title"><div class="dialog-content">
-  <div class="dialog-head"><h2 id="research-title">AI 리서치 업데이트</h2><button class="close" type="button" aria-label="닫기" data-close>×</button></div>
-  <p class="dialog-lead">피클, Claude, Gemini, Codex에 아래 요청을 보내고 조사 결과를 이 수첩에 가져오세요.</p>
-  <label for="prompt" class="field-label">에이전트에 전달할 요청</label><textarea id="prompt" class="prompt" rows="8" readonly></textarea>
-  <div class="dialog-footer"><button data-import class="button" type="button">JSON 가져오기</button><button id="copy" class="button primary" type="button">요청문 복사</button></div>
+  <div class="dialog-head"><h2 id="research-title">이벤트 조사하기</h2><button class="close" type="button" aria-label="닫기" data-close>×</button></div>
+  <p class="dialog-lead">사용할 AI를 누르면 조사 요청문이 복사돼요. 해당 채팅에 붙여넣고, 받은 JSON 파일을 여기서 열어 주세요.</p>
+  <div id="research-agents"></div>
+  <p id="research-feedback" class="agent-feedback" role="status"></p>
+  <details class="prompt-preview"><summary>요청문 미리 보기</summary><textarea aria-label="조사 요청문" id="prompt" class="prompt" rows="6" readonly></textarea></details>
+  <div class="dialog-footer"><button data-import class="button primary" type="button">조사 결과 파일 가져오기</button></div>
 </div></dialog>
 <dialog id="detail" aria-labelledby="detail-title"><div class="dialog-content">
   <div class="dialog-head"><div><p id="detail-org" class="detail-org"></p><h2 id="detail-title"></h2></div><button type="button" class="close" data-close aria-label="닫기">×</button></div>
@@ -110,7 +121,9 @@
   <form id="record-form">
     <h3>내 응모 기록</h3>
     <div class="field"><label for="record-status">응모 상태</label><select id="record-status"></select></div>
+    <p id="unwin-hint" hidden>이 상태로 저장하면 기존 당첨 금액과 실물 경품이 보관함에서 삭제됩니다.</p>
     <div id="prize-fields" class="prize-fields"><div class="field"><label for="record-cash">당첨 현금 (원)</label><input type="number" id="record-cash" min="0" max="9007199254740991" step="1" inputmode="numeric"></div><div class="field"><label for="record-voucher">당첨 상품권 (원)</label><input type="number" id="record-voucher" min="0" max="9007199254740991" step="1" inputmode="numeric"></div></div>
+    <fieldset id="goods-fields"><legend>실물 경품</legend><div id="goods-rows"></div><button class="button" id="add-goods" type="button">품목 추가</button></fieldset>
     <div class="field"><label for="record-memo">내 메모</label><textarea id="record-memo" maxlength="8000" rows="3" placeholder="응모한 계정이나 경품 수령일 등"></textarea></div>
     <div class="dialog-footer"><button type="button" class="button" data-close>닫기</button><button type="submit" class="button primary" id="save">기록 저장</button></div>
   </form>
